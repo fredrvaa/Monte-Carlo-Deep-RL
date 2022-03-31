@@ -2,15 +2,21 @@ from typing import Optional
 
 import numpy as np
 
-from environments.environment import State, Environment
+from environments.environment import Environment, Player
 
 
 class Node:
-    def __init__(self, state: State, exploration_constant: float = 1.0, parent: Optional['Node'] = None):
+    def __init__(self,
+                 state: np.ndarray,
+                 action: Optional[int] = None,
+                 exploration_constant: float = 1.0,
+                 parent: Optional['Node'] = None):
+
         self.N: int = 0
         self.total_value: float = 0
     
-        self.state: State = state
+        self.state: np.ndarray = state
+        self.action: Optional[int] = action
         self.exploration_constant = exploration_constant
 
         self.parent: 'Node' = parent
@@ -36,7 +42,7 @@ class Node:
 class MonteCarloTree:
     def __init__(self, environment: Environment, exploration_constant: float = 1.0, M: int = 100):
         self.environment: Environment = environment
-        self.root: Optional[State] = None
+        self.root: Optional[Node] = None
 
         self.exploration_constant: float = exploration_constant
         self.M: int = M
@@ -44,7 +50,7 @@ class MonteCarloTree:
     def _tree_search(self) -> Node:
         node = self.root
         while not node.is_leaf:
-            if node.state.player == self.root.state.player:
+            if self.environment.get_player(node.state) == self.environment.get_player(self.root.state):
                 a = np.argmax([child.Q + child.u for child in node.children])
             else:
                 a = np.argmin([child.Q - child.u for child in node.children])
@@ -52,17 +58,22 @@ class MonteCarloTree:
         return node
 
     def _node_expansion(self, node: Node) -> None:
-        successor_states = self.environment.get_successor_states(node.state)
-        node.children = [Node(state=state, exploration_constant=self.exploration_constant, parent=node)
-                         for state in successor_states]
+        legal_actions = self.environment.get_legal_actions(node.state)
+        successor_states = np.array([self.environment.perform_action(np.copy(node.state), action)
+                                     for action in legal_actions])
+        node.children = [Node(state=state, action=action, exploration_constant=self.exploration_constant, parent=node)
+                         for state, action in zip(successor_states, legal_actions)]
 
     def _rollout(self, node: Node) -> float:
         state = node.state
-        while not self.environment.is_final(state):
+        final, winning_player = self.environment.is_final(state)
+        while not final:
             state = self.environment.get_random_successor_state(state)
-
-        winning_player = self.environment.winning_player(state)
-        return 1.0 if winning_player == self.root.state.player else -1.0
+            final, winning_player = self.environment.is_final(state)
+        #print(winning_player)
+        #print(self.environment.get_player(self.root.state))
+        reward = 1.0 if winning_player == self.environment.get_player(self.root.state) else -1.0
+        return reward
 
     def _backpropagation(self, node: Node, value: float) -> None:
         while True:
@@ -73,7 +84,7 @@ class MonteCarloTree:
             else:
                 node = node.parent
 
-    def simulation(self, state: State) -> list[float]:
+    def simulation(self, state: np.ndarray) -> list[float]:
         self.root = Node(state=state)
         for m in range(self.M):
             node = self._tree_search()
@@ -84,8 +95,8 @@ class MonteCarloTree:
                 rollout_node = node
             value = self._rollout(node=rollout_node)
             self._backpropagation(node=rollout_node, value=value)
+        print(self.root.state)
+        value_sum = sum([child.Q + child.u for child in self.root.children])
+        action_probabilities = {child.action: (child.Q + child.u) / value_sum for child in self.root.children}
 
-        child_values = [child.Q + child.u for child in self.root.children]
-        probs = [value / sum(child_values) for value in child_values]
-
-        return probs
+        return action_probabilities
