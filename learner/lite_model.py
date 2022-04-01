@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import tensorflow.keras as tfk
 
 
 class LiteModel:
@@ -7,6 +8,11 @@ class LiteModel:
     @classmethod
     def from_file(cls, model_path):
         return LiteModel(tf.lite.Interpreter(model_path=model_path))
+
+    @classmethod
+    def from_keras_file(cls, model_path):
+        kmodel = tfk.models.load_model(model_path)
+        return cls.from_keras_model(kmodel)
 
     @classmethod
     def from_keras_model(cls, kmodel):
