@@ -2,7 +2,6 @@ from typing import Optional
 
 import numpy as np
 import tensorflow.keras as tfk
-from tqdm import tqdm
 
 from environments.environment import Environment, Player
 from learner.lite_model import LiteModel
@@ -106,7 +105,7 @@ class MonteCarloTree:
 
     def simulation(self, state: np.ndarray) -> np.ndarray:
         self.root = Node(state=state)
-        for m in tqdm(range(self.M)):
+        for m in range(self.M):
             node = self._tree_search()
             self._node_expansion(node=node)
             if len(node.children) > 0:
