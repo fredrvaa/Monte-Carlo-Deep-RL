@@ -70,9 +70,9 @@ class MonteCarloTree:
         while not final:
             state = self.environment.get_random_successor_state(state)
             final, winning_player = self.environment.is_final(state)
-        #print(winning_player)
-        #print(self.environment.get_player(self.root.state))
+
         reward = 1.0 if winning_player == self.environment.get_player(self.root.state) else -1.0
+
         return reward
 
     def _backpropagation(self, node: Node, value: float) -> None:
@@ -95,8 +95,7 @@ class MonteCarloTree:
                 rollout_node = node
             value = self._rollout(node=rollout_node)
             self._backpropagation(node=rollout_node, value=value)
-        print(self.root.state)
-        value_sum = sum([child.Q + child.u for child in self.root.children])
-        action_probabilities = {child.action: (child.Q + child.u) / value_sum for child in self.root.children}
+        value_sum = sum([np.exp(child.Q + child.u) for child in self.root.children])
+        action_probabilities = {child.action: np.exp(child.Q + child.u) / value_sum for child in self.root.children}
 
         return action_probabilities

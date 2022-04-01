@@ -1,73 +1,59 @@
 from typing import Optional
 import numpy as np
 
-from environments.environment import State, Environment
+from environments.environment import Environment, Player
 
 
 class Nim(Environment):
     def __init__(self, starting_stones: int = 10, min_take: int = 1, max_take: int = 3):
+        super().__init__()
         self.starting_stones: int = starting_stones
+        self.binary_length: int = len(format(starting_stones, 'b'))
         self.min_take: int = min_take
         self.max_take: int = max_take
-        self.state: Optional[State] = None
+        self.n_actions: int = max_take - min_take + 1
 
-    def initialize(self, starting_player: int = 1) -> State:
-        self.state = State(value=self.starting_stones, player=starting_player)
+    def _to_binary(self, value: int) -> np.ndarray:
+        return np.array(list(format(value, f'0{self.binary_length}b')), dtype=int)
+
+    def _to_value(self, state: np.ndarray) -> np.ndarray:
+        return state[2:].dot(np.flip(2**np.arange(state[2:].shape[-1])))
+
+    def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
+        self.state = np.concatenate((np.array(starting_player.value), self._to_binary(self.starting_stones)))
         return self.state
 
-    def get_successor_states(self, state: Optional[State] = None) -> list[State]:
-        if state is None:
-            state = self.state
+    def is_legal(self, state: np.ndarray, action: int) -> bool:
+        take = action + self.min_take
+        return self.min_take <= take <= self.max_take and take <= self._to_value(state)
 
-        other_player = 1 if state.player == 2 else 2
-        return [State(value=state.value - take, player=other_player)
-                for take in range(self.min_take, self.max_take+1) if take <= state.value]
+    def is_final(self, state: np.ndarray) -> tuple[bool, Optional[Player]]:
+        if self._to_value(state) == 0:
+            return True, self.get_other_player(state)
+        else:
+            return False, None
 
-    def get_random_successor_state(self, state: Optional[State] = None) -> State:
-        if state is None:
-            state = self.state
+    def perform_action(self, state: np.ndarray, action: int) -> np.ndarray:
+        take = action + self.min_take
+        if not self.is_legal(state, action):
+            raise ValueError(f'Action {action} is not legal. Can not take {take} stones.')
 
-        other_player = 1 if state.player == 2 else 2
-        max_take = min(self.max_take, state.value)
-        take = np.random.randint(self.min_take, max_take+1) if max_take > self.min_take else max_take
-        return State(value=state.value - take, player=other_player)
+        state[2:] = self._to_binary(self._to_value(state) - take)
+        self.switch_player(state)
+        return state
 
-    def is_legal(self, state: State, action: int) -> bool:
-        take = action + 1
-        return self.min_take <= take <= self.max_take and take <= self.state.value
-
-    def is_final(self, state: Optional[State] = None) -> bool:
-        if state is None:
-            state = self.state
-
-        return state.value == 0
-
-    def winning_player(self, state: Optional[State] = None) -> int:
-        if state is None:
-            state = self.state
-        if not self.is_final(state):
-            raise("State is not final")
-
-        return 1 if state.player == 2 else 2
-
-    def step(self, action: int) -> tuple[bool, State]:
-        if self.state is None:
-            raise ValueError("Call initialize() before trying to step")
-        if not self.is_legal(self.state, action):
-            raise ValueError("Action is illegal")
-
-        take = action + 1
-        self.state.value -= take
-        self.state.player = 1 if self.state.player == 2 else 2
-
-        return self.is_final(self.state), self.state
+    def visualize(self, state: np.ndarray) -> None:
+        print(f'{self.get_player(state)} | Stones: {self._to_value(state)}')
 
 
 if __name__ == '__main__':
     nim = Nim()
-    print([s.value for s in nim.get_successor_states()])
-    nim.step(2)
-    print([s.value for s in nim.get_successor_states()])
-    nim.step(3)
-    print([s.value for s in nim.get_successor_states()])
-    nim.step(4)
+    nim.initialize()
+    nim.step(1)
+    print(nim._to_value(nim.state))
+    # print([s.value for s in nim.get_successor_states()])
+    # nim.step(2)
+    # print([s.value for s in nim.get_successor_states()])
+    # nim.step(3)
+    # print([s.value for s in nim.get_successor_states()])
+    # nim.step(4)

@@ -10,19 +10,10 @@ from environments.utils import rotate
 
 class Hex(Environment):
     def __init__(self, k: int = 4):
+        super().__init__()
+
         self.k: int = k
-        self.state: np.ndarray = np.zeros(2*(k**2 + 1))  # +1 for player
         self.n_actions: int = k**2
-
-        board = self.state_to_board(self.state, self.k)
-        origin = (self.k - 1) / 2
-
-        for i, row in enumerate(board):
-            for j, node in enumerate(row):
-                for neighbour in node.neighbours:
-                    node_x, node_y = rotate(node.row, node.col, origin, -135)
-                    neighbour_x, neighbour_y = rotate(neighbour.row, neighbour.col, origin, -135)
-                    plt.plot([node_x, neighbour_x], [node_y, neighbour_y], color='grey', zorder=1, markersize=10, marker='o')
 
         self.player1_plot, = plt.plot([], [], color='red', zorder=2, marker='o', markersize=10, ls="")
         self.player2_plot, = plt.plot([], [], color='black', zorder=2, marker='o', markersize=10, ls="")
@@ -31,7 +22,16 @@ class Hex(Environment):
         self.state = np.zeros(2*(self.k**2 + 1))  # +1 for player
         self.state[:2] = starting_player.value
 
+        board = self.state_to_board(self.state, self.k)
+        origin = (self.k - 1) / 2
         plt.ion()
+        for i, row in enumerate(board):
+            for j, node in enumerate(row):
+                for neighbour in node.neighbours:
+                    node_x, node_y = rotate(node.row, node.col, origin, -135)
+                    neighbour_x, neighbour_y = rotate(neighbour.row, neighbour.col, origin, -135)
+                    plt.plot([node_x, neighbour_x], [node_y, neighbour_y], color='grey', zorder=1, markersize=10,
+                             marker='o')
 
         self.player1_plot.set_xdata([])
         self.player1_plot.set_ydata([])
@@ -39,6 +39,8 @@ class Hex(Environment):
         self.player2_plot.set_xdata([])
         self.player2_plot.set_ydata([])
 
+        plt.pause(0.05)
+        plt.show(block=False)
         return self.state
 
     @staticmethod
@@ -51,35 +53,10 @@ class Hex(Environment):
         idx = 2 + position * 2
         return state[idx:idx+2]
 
-    def perform_action(self, state: np.ndarray, action: int) -> np.ndarray:
-        if not self.is_legal(state, action):
-            raise ValueError(f'Action {action} is not legal. Piece can not be placed.')
-        idxs = self.to_idxs(action)
-        state[idxs[0]:idxs[1]+1] = state[:2]
-        self.switch_player(state)
-        return state
-
-    def get_legal_actions(self, state: np.ndarray) -> np.ndarray:
-        return np.array([action for action in range(self.n_actions) if self.is_legal(state, action)])
-
-    def get_successor_states(self, state: np.ndarray) -> np.ndarray:
-        return np.array([self.perform_action(np.copy(state), action) for action in self.get_legal_actions(state)])
-
-    def get_random_action(self, state: np.ndarray) -> int:
-        return np.random.choice(self.get_legal_actions(state))
-
-    def get_random_successor_state(self, state: np.ndarray) -> np.ndarray:
-        action = self.get_random_action(state)
-        return self.perform_action(np.copy(state), action)
-
-    def is_legal(self, state: np.ndarray, action: int) -> bool:
-        idxs = self.to_idxs(action)
-        return 0 <= action <= self.n_actions - 1 and state[idxs[0]] == 0 and state[idxs[1]] == 0
-
     @staticmethod
     def state_to_board(state: np.ndarray, k: int) -> np.ndarray:
         # Construct board
-        board = np.reshape([Node(Hex.to_piece(state, a)) for a in range(k**2)], (k, k))
+        board = np.reshape([Node(Hex.to_piece(state, a)) for a in range(k ** 2)], (k, k))
 
         # Add neighbours
         for row in range(k):
@@ -101,6 +78,10 @@ class Hex(Environment):
 
         return board
 
+    def is_legal(self, state: np.ndarray, action: int) -> bool:
+        idxs = self.to_idxs(action)
+        return 0 <= action <= self.n_actions - 1 and state[idxs[0]] == 0 and state[idxs[1]] == 0
+
     def is_final(self, state: np.ndarray) -> tuple[bool, Optional[Player]]:
         board = self.state_to_board(state, self.k)
 
@@ -119,25 +100,22 @@ class Hex(Environment):
 
         return False, None
 
-    def step(self, action: int, visualize: bool = True) -> tuple[bool, Optional[Player], np.ndarray]:
-        if self.state is None:
-            raise ValueError('Call initialize() before trying to step')
+    def perform_action(self, state: np.ndarray, action: int) -> np.ndarray:
+        if not self.is_legal(state, action):
+            raise ValueError(f'Action {action} is not legal. Piece can not be placed.')
+        idxs = self.to_idxs(action)
+        state[idxs[0]:idxs[1]+1] = state[:2]
+        self.switch_player(state)
+        return state
 
-        self.perform_action(self.state, action)
-        final, winning_player = self.is_final(self.state)
-
-        if visualize:
-            self.visualize(self.state, self.k)
-        return final, winning_player, self.state
-
-    def visualize(self, state: np.ndarray, k: int) -> None:
+    def visualize(self, state: np.ndarray) -> None:
         player1_xdata = []
         player1_ydata = []
         player2_xdata = []
         player2_ydata = []
 
-        board = self.state_to_board(state, k)
-        origin = (k-1) / 2
+        board = self.state_to_board(state, self.k)
+        origin = (self.k-1) / 2
         for i, row in enumerate(board):
             for j, node in enumerate(row):
                 x, y = rotate(i, j, origin, -135)
@@ -154,7 +132,6 @@ class Hex(Environment):
         self.player2_plot.set_ydata(player2_ydata)
 
         plt.pause(0.05)
-        plt.show(block=False)
 
 
 
