@@ -12,11 +12,8 @@ class Player(Enum):
 
 
 class Environment(ABC):
-    def __init__(self):
-        self.state: Optional[np.ndarray] = None
-
     @abstractmethod
-    def initialize(self) -> np.ndarray:
+    def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
         pass
 
     @abstractmethod
@@ -48,20 +45,20 @@ class Environment(ABC):
         action = self.get_random_action(state)
         return self.perform_action(np.copy(state), action)
 
-    def step(self, action: int, visualize: bool = False) -> tuple[bool, Optional[Player], np.ndarray]:
-        if self.state is None:
+    def step(self, state: np.ndarray, action: int, visualize: bool = False) -> tuple[bool, Optional[Player], np.ndarray]:
+        if state is None:
             raise ValueError('Call initialize() before trying to step')
 
         if visualize:
-            self.visualize(self.state)
+            self.visualize(state)
 
-        self.perform_action(self.state, action)
-        final, winning_player = self.is_final(self.state)
+        self.perform_action(state, action)
+        final, winning_player = self.is_final(state)
 
         if final and visualize:
-            self.visualize(self.state)
+            self.visualize(state)
 
-        return final, winning_player, self.state
+        return final, winning_player, state
 
     @staticmethod
     def get_player(state: np.ndarray) -> Player:

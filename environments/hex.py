@@ -10,8 +10,6 @@ from environments.utils import rotate
 
 class Hex(Environment):
     def __init__(self, k: int = 4):
-        super().__init__()
-
         self.k: int = k
         self.n_actions: int = k**2
 
@@ -19,10 +17,10 @@ class Hex(Environment):
         self.player2_plot, = plt.plot([], [], color='black', zorder=2, marker='o', markersize=10, ls="")
 
     def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
-        self.state = np.zeros(2*(self.k**2 + 1))  # +1 for player
-        self.state[:2] = starting_player.value
+        state = np.zeros(2*(self.k**2 + 1))  # +1 for player
+        state[:2] = starting_player.value
 
-        board = self.state_to_board(self.state, self.k)
+        board = self.state_to_board(state, self.k)
         origin = (self.k - 1) / 2
         plt.ion()
         for i, row in enumerate(board):
@@ -39,9 +37,8 @@ class Hex(Environment):
         self.player2_plot.set_xdata([])
         self.player2_plot.set_ydata([])
 
-        plt.pause(0.05)
-        plt.show(block=False)
-        return self.state
+
+        return state
 
     @staticmethod
     def to_idxs(position: int) -> tuple[int, int]:

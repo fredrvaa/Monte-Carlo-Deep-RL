@@ -6,7 +6,6 @@ from environments.environment import Environment, Player
 
 class Nim(Environment):
     def __init__(self, starting_stones: int = 10, min_take: int = 1, max_take: int = 3):
-        super().__init__()
         self.starting_stones: int = starting_stones
         self.binary_length: int = len(format(starting_stones, 'b'))
         self.min_take: int = min_take
@@ -20,8 +19,8 @@ class Nim(Environment):
         return state[2:].dot(np.flip(2**np.arange(state[2:].shape[-1])))
 
     def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
-        self.state = np.concatenate((np.array(starting_player.value), self._to_binary(self.starting_stones)))
-        return self.state
+        state = np.concatenate((np.array(starting_player.value), self._to_binary(self.starting_stones)))
+        return state
 
     def is_legal(self, state: np.ndarray, action: int) -> bool:
         take = action + self.min_take

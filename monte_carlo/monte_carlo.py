@@ -1,8 +1,11 @@
 from typing import Optional
 
 import numpy as np
+import tensorflow.keras as tfk
+from tqdm import tqdm
 
 from environments.environment import Environment, Player
+from learner.lite_model import LiteModel
 
 
 class Node:
@@ -40,12 +43,21 @@ class Node:
 
 
 class MonteCarloTree:
-    def __init__(self, environment: Environment, exploration_constant: float = 1.0, M: int = 100):
+    def __init__(self,
+                 environment: Environment,
+                 actor: LiteModel,
+                 exploration_constant: float = 1.0,
+                 M: int = 100,
+                 epsilon: float = 0.1):
+
         self.environment: Environment = environment
+        self.actor = actor
+
         self.root: Optional[Node] = None
 
         self.exploration_constant: float = exploration_constant
         self.M: int = M
+        self.epsilon = epsilon
 
     def _tree_search(self) -> Node:
         node = self.root
@@ -68,8 +80,16 @@ class MonteCarloTree:
         state = node.state
         final, winning_player = self.environment.is_final(state)
         while not final:
-            state = self.environment.get_random_successor_state(state)
-            final, winning_player = self.environment.is_final(state)
+            if np.random.random() > self.epsilon:
+                dist = self.actor.predict_single(state)
+                dist = np.array([dist[action] if self.environment.is_legal(state, action) else 0
+                                 for action in range(dist.shape[0])])
+                dist /= dist.sum()
+                action = np.argmax(dist)
+            else:
+                action = self.environment.get_random_action(state)
+
+            final, winning_player, state = self.environment.step(state, action)
 
         reward = 1.0 if winning_player == self.environment.get_player(self.root.state) else -1.0
 
@@ -84,9 +104,9 @@ class MonteCarloTree:
             else:
                 node = node.parent
 
-    def simulation(self, state: np.ndarray) -> list[float]:
+    def simulation(self, state: np.ndarray) -> np.ndarray:
         self.root = Node(state=state)
-        for m in range(self.M):
+        for m in tqdm(range(self.M)):
             node = self._tree_search()
             self._node_expansion(node=node)
             if len(node.children) > 0:
@@ -95,7 +115,7 @@ class MonteCarloTree:
                 rollout_node = node
             value = self._rollout(node=rollout_node)
             self._backpropagation(node=rollout_node, value=value)
-        value_sum = sum([np.exp(child.Q + child.u) for child in self.root.children])
-        action_probabilities = {child.action: np.exp(child.Q + child.u) / value_sum for child in self.root.children}
 
-        return action_probabilities
+        visit_sum = sum([child.N for child in self.root.children])
+        dist = {child.action: child.N / visit_sum for child in self.root.children}
+        return np.array([0 if i not in dist else dist[i] for i in range(self.environment.n_actions)])
