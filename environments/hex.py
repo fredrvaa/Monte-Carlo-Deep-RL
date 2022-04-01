@@ -22,10 +22,10 @@ class Hex(Environment):
                 for neighbour in node.neighbours:
                     node_x, node_y = rotate(node.row, node.col, origin, -135)
                     neighbour_x, neighbour_y = rotate(neighbour.row, neighbour.col, origin, -135)
-                    plt.plot([node_x, neighbour_x], [node_y, neighbour_y], color='grey', zorder=1, marker='o')
+                    plt.plot([node_x, neighbour_x], [node_y, neighbour_y], color='grey', zorder=1, markersize=10, marker='o')
 
-        self.player1_plot, = plt.plot([], [], color='red', zorder=2, marker='o', ls="")
-        self.player2_plot, = plt.plot([], [], color='black', zorder=2, marker='o', ls="")
+        self.player1_plot, = plt.plot([], [], color='red', zorder=2, marker='o', markersize=10, ls="")
+        self.player2_plot, = plt.plot([], [], color='black', zorder=2, marker='o', markersize=10, ls="")
 
     def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
         self.state = np.zeros(2*(self.k**2 + 1))  # +1 for player

@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 from environments.environment import Environment, Player
 # from environments.nim import Nim
@@ -8,7 +9,7 @@ from monte_carlo.monte_carlo import MonteCarloTree
 k = 4
 environment = Hex(k=k)
 environment.initialize(starting_player=Player.one)
-mc = MonteCarloTree(environment=environment, M=1000, exploration_constant=1.0)
+mc = MonteCarloTree(environment=environment, M=400, exploration_constant=1.0)
 
 turn = 2
 final, winning_player = environment.is_final(environment.state)
@@ -21,5 +22,5 @@ while not final:
     turn += 1
     final, winning_player = environment.is_final(environment.state)
 
-environment.visualize(environment.state, k)
 print(f'Winner: Player {winning_player}')
+plt.show(block=True)
