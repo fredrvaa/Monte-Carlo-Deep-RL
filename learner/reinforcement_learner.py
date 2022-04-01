@@ -38,7 +38,7 @@ class ReinforcementLearner:
 
     def _checkpoint_model(self, n):
         if self.checkpoint_folder is not None and self.checkpoint_iter is not None:
-            tfk.models.save_model(self.actor, f'{self.checkpoint_folder}/{self.environment.__name__}actor_{n}.h5')
+            tfk.models.save_model(self.actor, f'{self.checkpoint_folder}/{self.environment.__class__.__name__}_actor_{n}.h5')
 
     def fit(self, n_games: int = 100, n_search_games: int = 500, batch_size: int = 20, visualize: bool = False):
         replay_states = []
@@ -50,9 +50,10 @@ class ReinforcementLearner:
 
             state = self.environment.initialize(np.random.choice(list(Player)))
             mct = MonteCarloTree(self.environment, LiteModel.from_keras_model(self.actor), M=n_search_games)
-            print(f'Building replay buffer...')
+            print(f'Building replay buffer...', end='')
             final, winning_player = False, None
             while not final:
+                print('.', end='')
                 dist = mct.simulation(state)
                 replay_states.append(state)
                 replay_dists.append(dist)
@@ -60,7 +61,7 @@ class ReinforcementLearner:
                 action = int(np.argmax(dist))
                 final, winning_player, state = self.environment.step(state, action, visualize=visualize)
             print(replay_dists[-1])
-            print(f'Fitting model...')
+            print(f'\nFitting model...')
             print(len(replay_states))
 
             self.actor.fit(
@@ -73,6 +74,6 @@ class ReinforcementLearner:
 
 
 if __name__ == '__main__':
-    environment = Hex(k=7)
+    environment = Hex(k=4)
     rl = ReinforcementLearner(environment, [256, 128, 64], checkpoint_iter=5)
     rl.fit(100, 1000, 50)
