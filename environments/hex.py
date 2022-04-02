@@ -101,9 +101,10 @@ class Hex(Environment):
         if not self.is_legal(state, action):
             raise ValueError(f'Action {action} is not legal. Piece can not be placed.')
         idxs = self.to_idxs(action)
-        state[idxs[0]:idxs[1]+1] = state[:2]
-        self.switch_player(state)
-        return state
+        new_state = np.copy(state)
+        new_state[idxs[0]:idxs[1]+1] = new_state[:2]
+        self.switch_player(new_state)
+        return new_state
 
     def visualize(self, state: np.ndarray) -> None:
         player1_xdata = []
@@ -130,6 +131,8 @@ class Hex(Environment):
 
         plt.pause(0.05)
 
+    def __str__(self) -> str:
+        return f'{self.__class__.__name__}_{self.k}x{self.k}'
 
 
 if __name__ == '__main__':

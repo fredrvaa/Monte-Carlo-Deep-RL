@@ -36,13 +36,16 @@ class Nim(Environment):
         take = action + self.min_take
         if not self.is_legal(state, action):
             raise ValueError(f'Action {action} is not legal. Can not take {take} stones.')
-
-        state[2:] = self._to_binary(self._to_value(state) - take)
-        self.switch_player(state)
-        return state
+        new_state = np.copy(state)
+        new_state[2:] = self._to_binary(self._to_value(new_state) - take)
+        self.switch_player(new_state)
+        return new_state
 
     def visualize(self, state: np.ndarray) -> None:
         print(f'{self.get_player(state)} | Stones: {self._to_value(state)}')
+
+    def __str__(self) -> str:
+        return f'{self.__class__.__name__}_{self.starting_stones}'
 
 
 if __name__ == '__main__':

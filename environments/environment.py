@@ -32,10 +32,10 @@ class Environment(ABC):
     def visualize(self, state: np.ndarray) -> None:
         pass
 
-    def get_action_from_distribution(self, state: np.ndarray, dist: np.ndarray) -> int:
-        legal_dist = np.array([dist[action] if self.is_legal(state, action) else 0 for action in range(dist.shape[0])])
+    def get_action_from_distribution(self, state: np.ndarray, dist: np.ndarray, probabilistic: bool = False) -> int:
+        legal_dist = np.array([dist[action] if self.is_legal(state, action) else 0.0 for action in range(dist.shape[0])])
         legal_dist /= legal_dist.sum()
-        return np.argmax(legal_dist)
+        return np.random.choice(np.arange(legal_dist.shape[0]), p=legal_dist) if probabilistic else np.argmax(legal_dist)
 
     def get_legal_actions(self, state: np.ndarray) -> np.ndarray:
         return np.array([action for action in range(self.n_actions) if self.is_legal(state, action)])
@@ -57,13 +57,10 @@ class Environment(ABC):
         if visualize:
             self.visualize(state)
 
-        self.perform_action(state, action)
-        final, winning_player = self.is_final(state)
+        new_state = self.perform_action(state, action)
+        final, winning_player = self.is_final(new_state)
 
-        if final and visualize:
-            self.visualize(state)
-
-        return final, winning_player, state
+        return final, winning_player, new_state
 
     @staticmethod
     def get_player(state: np.ndarray) -> Player:
@@ -77,3 +74,7 @@ class Environment(ABC):
     def switch_player(state: np.ndarray) -> np.ndarray:
         state[:2] = np.flip(state[:2])
         return state
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
