@@ -12,12 +12,13 @@ class Hex(Environment):
     def __init__(self, k: int = 4):
         self.k: int = k
         self.n_actions: int = k**2
+        self.state_size: int = 2 * (self.n_actions + 1)  # +1 for player
 
         self.player1_plot, = plt.plot([], [], color='red', zorder=2, marker='o', markersize=10, ls="")
         self.player2_plot, = plt.plot([], [], color='black', zorder=2, marker='o', markersize=10, ls="")
 
     def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
-        state = np.zeros(2*(self.k**2 + 1))  # +1 for player
+        state = np.zeros(self.state_size)
         state[:2] = starting_player.value
 
         board = self.state_to_board(state, self.k)

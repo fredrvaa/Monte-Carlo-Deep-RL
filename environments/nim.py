@@ -11,6 +11,7 @@ class Nim(Environment):
         self.min_take: int = min_take
         self.max_take: int = max_take
         self.n_actions: int = max_take - min_take + 1
+        self.state_size: int = self.binary_length + 2  # +2 for player
 
     def _to_binary(self, value: int) -> np.ndarray:
         return np.array(list(format(value, f'0{self.binary_length}b')), dtype=int)
