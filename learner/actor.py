@@ -15,12 +15,13 @@ class Actor:
                  optimizer: str = 'adam',
                  learning_rate: float = 1e-3,
                  checkpoint_folder: Optional[str] = 'models'):
+        initializer = tfk.initializers.GlorotUniform()
 
         self.model = tfk.Sequential()
         self.model.add(tfkl.InputLayer(input_shape=input_size))
         for size in hidden_sizes:
-            self.model.add(tfkl.Dense(units=size, activation=activation))
-        self.model.add(tfkl.Dense(units=output_size, activation=activation))
+            self.model.add(tfkl.Dense(units=size, activation=activation, kernel_initializer=initializer))
+        self.model.add(tfkl.Dense(units=output_size, activation=activation, kernel_initializer=initializer))
         self.model.add(tfkl.Softmax())
         optimizer = tfk.optimizers.Adam(learning_rate=learning_rate)
         self.model.compile(loss=tfk.losses.CategoricalCrossentropy(), optimizer=optimizer)
