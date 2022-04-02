@@ -81,10 +81,7 @@ class MonteCarloTree:
         while not final:
             if np.random.random() > self.epsilon:
                 dist = self.actor.predict_single(state)
-                dist = np.array([dist[action] if self.environment.is_legal(state, action) else 0
-                                 for action in range(dist.shape[0])])
-                dist /= dist.sum()
-                action = np.argmax(dist)
+                action = self.environment.get_action_from_distribution(state, dist)
             else:
                 action = self.environment.get_random_action(state)
 

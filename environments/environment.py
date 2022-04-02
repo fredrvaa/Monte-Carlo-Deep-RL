@@ -32,6 +32,11 @@ class Environment(ABC):
     def visualize(self, state: np.ndarray) -> None:
         pass
 
+    def get_action_from_distribution(self, state: np.ndarray, dist: np.ndarray) -> int:
+        legal_dist = np.array([dist[action] if self.is_legal(state, action) else 0 for action in range(dist.shape[0])])
+        legal_dist /= legal_dist.sum()
+        return np.argmax(legal_dist)
+
     def get_legal_actions(self, state: np.ndarray) -> np.ndarray:
         return np.array([action for action in range(self.n_actions) if self.is_legal(state, action)])
 

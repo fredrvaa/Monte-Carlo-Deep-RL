@@ -27,10 +27,7 @@ class Topp:
         while not final:
             current_model = model1 if current_player == Player.one else model2
             dist = current_model.predict_single(state)
-            dist = np.array([dist[action] if self.environment.is_legal(state, action) else 0
-                             for action in range(dist.shape[0])])
-            dist /= dist.sum()
-            action = np.argmax(dist)
+            action = self.environment.get_action_from_distribution(state, dist)
 
             final, winning_player, state = self.environment.step(state, action, visualize)
             current_player = Player.one if current_player == Player.two else Player.two
@@ -41,6 +38,7 @@ class Topp:
         wins = np.zeros(len(self.models))
         for i, model1 in enumerate(self.models[:-1]):
             for j, model2 in enumerate(self.models[i+1:]):
+                print(f'Model {i+1} vs Model {i+j+2}')
                 for n in range(n_games):
                     starting_player = Player.one if n % 2 == 0 else Player.two
                     winning_player = self.competition(model1, model2, starting_player)
