@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 
 from monte_carlo.node import Node
-from environments.environment import Environment
+from environments.environment import Environment, Player
 from learner.lite_model import LiteModel
 
 
@@ -13,7 +13,7 @@ class MonteCarloTree:
                  actor: LiteModel,
                  exploration_constant: float = 1.0,
                  M: int = 100,
-                 epsilon: float = 0.1):
+                 epsilon: float = 0.01):
 
         self.environment: Environment = environment
         self.actor = actor
@@ -27,7 +27,7 @@ class MonteCarloTree:
     def _tree_search(self) -> Node:
         node = self.root
         while not node.is_leaf:
-            if self.environment.get_player(node.state) == self.environment.get_player(self.root.state):
+            if self.environment.get_player(node.state) == Player.one:
                 a = np.argmax([child.Q + child.u for child in node.children])
             else:
                 a = np.argmin([child.Q - child.u for child in node.children])
@@ -53,7 +53,7 @@ class MonteCarloTree:
 
             final, winning_player, state = self.environment.step(state, action)
 
-        reward = 1.0 if winning_player == self.environment.get_player(self.root.state) else -1.0
+        reward = 1.0 if winning_player == Player.one else -1.0
 
         return reward
 
