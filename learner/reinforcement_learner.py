@@ -13,13 +13,10 @@ class ReinforcementLearner:
     def __init__(self,
                  environment: Environment,
                  actor: Actor,
-                 checkpoint_iter: Optional[int] = None
                  ):
 
         self.environment: Environment = environment
         self.actor: Actor = actor
-
-        self.checkpoint_iter: Optional[int] = checkpoint_iter
 
     def fit(self,
             n_games: int = 100,
@@ -27,13 +24,14 @@ class ReinforcementLearner:
             batch_size: int = 20,
             buffer_size: Optional[int] = None,
             epochs: int = 1,
-            visualize: bool = False):
+            visualize: bool = False,
+            checkpoint_iter: Optional[int] = None):
 
         rbuf = ReplayBuffer(batch_size=batch_size, buffer_size=buffer_size)
 
         for n in range(n_games):
             start_time = time.time()
-            if n % self.checkpoint_iter == 0:
+            if checkpoint_iter is not None and n % checkpoint_iter == 0:
                 self.actor.checkpoint(f'{self.environment}_actor_{n}')
 
             print(f'----Game {n+1}----')
