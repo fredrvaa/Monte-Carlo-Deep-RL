@@ -61,6 +61,6 @@ class ReinforcementLearner:
             end_time = time.time()
             print('MCTS time: ', datetime.timedelta(seconds=mct_time - start_time))
             print('NN time: ', datetime.timedelta(seconds=end_time - mct_time))
-            print('Total time: ', datetime.timedelta(seconds=end_time - mct_time))
+            print('Total time: ', datetime.timedelta(seconds=end_time - start_time))
 
         self.actor.checkpoint(f'{self.environment}_actor_{n_games}')
