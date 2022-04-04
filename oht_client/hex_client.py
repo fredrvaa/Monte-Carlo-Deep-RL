@@ -39,7 +39,3 @@ class HexClient(ActorClient):
         dist = self.model.predict_single(state)
         action = int(self.environment.get_action_from_distribution(state, dist))
         return divmod(action, self.k)
-
-if __name__ == '__main__':
-    client = HexClient(model_path='models/Hex_7x7_actor_45.h5')
-    client.run()
