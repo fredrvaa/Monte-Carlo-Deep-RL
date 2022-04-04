@@ -20,11 +20,11 @@ class Node:
 
     @property
     def Q(self):
-        return self.total_value / (self.N + 1)
+        return self.total_value / self.N
 
     @property
     def u(self):
-        return self.exploration_constant * np.sqrt(np.log(self.parent.N) / (1 + self.N))
+        return self.exploration_constant * np.sqrt(np.log(self.parent.N) / self.N)
 
     @property
     def value(self):
@@ -33,3 +33,6 @@ class Node:
     @property
     def is_leaf(self):
         return len(self.children) == 0
+
+    def __str__(self):
+        return f'State: {self.state}, Visits: {self.N}, Value: {self.total_value}'

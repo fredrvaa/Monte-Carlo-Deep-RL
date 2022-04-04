@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 
 from monte_carlo.node import Node
@@ -11,6 +9,7 @@ class MonteCarloTree:
     def __init__(self,
                  environment: Environment,
                  actor: LiteModel,
+                 root_state: np.ndarray,
                  exploration_constant: float = 1.0,
                  M: int = 100,
                  epsilon: float = 0.01):
@@ -18,7 +17,7 @@ class MonteCarloTree:
         self.environment: Environment = environment
         self.actor = actor
 
-        self.root: Optional[Node] = None
+        self.root: Node = Node(state=root_state)
 
         self.exploration_constant: float = exploration_constant
         self.M: int = M
@@ -28,9 +27,9 @@ class MonteCarloTree:
         node = self.root
         while not node.is_leaf:
             if self.environment.get_player(node.state) == Player.one:
-                a = np.argmax([child.Q + child.u for child in node.children])
+                a = np.argmax([child.Q + child.u if child.N != 0 else np.inf for child in node.children])
             else:
-                a = np.argmin([child.Q - child.u for child in node.children])
+                a = np.argmin([child.Q - child.u if child.N != 0 else -np.inf for child in node.children])
             node = node.children[a]
         return node
 
@@ -54,7 +53,6 @@ class MonteCarloTree:
             final, winning_player, state = self.environment.step(state, action)
 
         reward = 1.0 if winning_player == Player.one else -1.0
-
         return reward
 
     def _backpropagation(self, node: Node, value: float) -> None:
@@ -66,8 +64,19 @@ class MonteCarloTree:
             else:
                 node = node.parent
 
-    def simulation(self, state: np.ndarray) -> np.ndarray:
-        self.root = Node(state=state)
+    def set_new_root(self, action: int):
+        new_root = None
+        for child in self.root.children:
+            if child.action == action:
+                new_root = child
+                break
+        if new_root is None:
+            raise ValueError(f'Action {action} does not move root to new state.')
+
+        new_root.parent = None
+        self.root = new_root
+
+    def simulation(self) -> np.ndarray:
         for m in range(self.M):
             node = self._tree_search()
             self._node_expansion(node=node)
@@ -81,3 +90,19 @@ class MonteCarloTree:
         visit_sum = sum([child.N for child in self.root.children])
         dist = {child.action: child.N / visit_sum for child in self.root.children}
         return np.array([0 if i not in dist else dist[i] for i in range(self.environment.n_actions)])
+
+
+if __name__ == '__main__':
+    from environments.nim import Nim
+
+    environment = Nim(starting_stones=2, max_take=5)
+    state = environment.initialize(starting_player=Player.two)
+    mct = MonteCarloTree(environment, None, state, M=10000, epsilon=1)
+    final, winning_player = False, None
+    while not final:
+        dist = mct.simulation()
+        print('State: ', environment._to_value(state))
+        print('Dist: ', dist, int(np.argmax(dist)) + 1)
+        action = int(np.argmax(dist))
+        final, winning_player, state = environment.step(state, action)
+        mct.set_new_root(action)
