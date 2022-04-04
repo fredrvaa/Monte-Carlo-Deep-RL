@@ -2,6 +2,7 @@ import time
 import datetime
 import numpy as np
 from typing import Optional
+from collections import Counter
 
 from environments.environment import Environment, Player
 from learner.actor import Actor
@@ -21,8 +22,15 @@ class ReinforcementLearner:
 
         self.checkpoint_iter: Optional[int] = checkpoint_iter
 
-    def fit(self, n_games: int = 100, n_search_games: int = 500, batch_size: int = 20, visualize: bool = False):
-        rbuf = ReplayBuffer(batch_size=batch_size)
+    def fit(self,
+            n_games: int = 100,
+            n_search_games: int = 500,
+            batch_size: int = 20,
+            buffer_size: Optional[int] = None,
+            epochs: int = 1,
+            visualize: bool = False):
+
+        rbuf = ReplayBuffer(batch_size=batch_size, buffer_size=buffer_size)
 
         for n in range(n_games):
             start_time = time.time()
@@ -40,14 +48,21 @@ class ReinforcementLearner:
 
                 rbuf.store_replay(state, dist)
 
-                action = int(np.argmax(dist))
+                #action = np.random.choice(np.arange(dist.shape[0]), p=dist)
+                action = self.environment.get_random_action(state)
                 final, winning_player, state = self.environment.step(state, action, visualize=visualize)
                 mct.set_new_root(action)
 
+            print(f'Buffer size: {rbuf.n}')
+
             ## NIM DEBUG START
-            x, y = rbuf.get_sample()
-            print(x, self.environment._to_value(x))
-            print(y, np.argmax(y) + 1)
+            # for i in range(10):
+            #     x, y = rbuf.get_sample()
+            #     print(x, self.environment._to_value(x))
+            #     print(y, np.argmax(y) + 1)
+
+            # values = [self.environment._to_value(xs) for xs in rbuf._x]
+            # print(Counter(values))
             ## NIM DEBUG END
 
             mct_time = time.time()
@@ -55,7 +70,10 @@ class ReinforcementLearner:
 
             if rbuf.is_ready:
                 x, y = rbuf.get_batch()
-                self.actor.model.fit(x, y)
+                # for xs, ys in zip(x, y):
+                #     print(xs, self.environment._to_value(xs))
+                #     print(ys, np.argmax(y) + 1)
+                self.actor.model.fit(x, y, epochs=5)
 
             end_time = time.time()
             print('MCTS time: ', datetime.timedelta(seconds=mct_time - start_time))
