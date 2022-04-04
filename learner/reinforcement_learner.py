@@ -2,7 +2,6 @@ import time
 import datetime
 import numpy as np
 from typing import Optional
-from collections import Counter
 
 from environments.environment import Environment, Player
 from learner.actor import Actor
@@ -48,32 +47,18 @@ class ReinforcementLearner:
 
                 rbuf.store_replay(state, dist)
 
-                #action = np.random.choice(np.arange(dist.shape[0]), p=dist)
                 action = self.environment.get_random_action(state)
                 final, winning_player, state = self.environment.step(state, action, visualize=visualize)
                 mct.set_new_root(action)
 
             print(f'Buffer size: {rbuf.n}')
 
-            ## NIM DEBUG START
-            # for i in range(10):
-            #     x, y = rbuf.get_sample()
-            #     print(x, self.environment._to_value(x))
-            #     print(y, np.argmax(y) + 1)
-
-            # values = [self.environment._to_value(xs) for xs in rbuf._x]
-            # print(Counter(values))
-            ## NIM DEBUG END
-
             mct_time = time.time()
             print('Fitting model...')
 
             if rbuf.is_ready:
                 x, y = rbuf.get_batch()
-                # for xs, ys in zip(x, y):
-                #     print(xs, self.environment._to_value(xs))
-                #     print(ys, np.argmax(y) + 1)
-                self.actor.model.fit(x, y, epochs=5)
+                self.actor.model.fit(x, y, epochs=epochs)
 
             end_time = time.time()
             print('MCTS time: ', datetime.timedelta(seconds=mct_time - start_time))
