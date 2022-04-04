@@ -33,7 +33,7 @@ class Environment(ABC):
         pass
 
     def get_action_from_distribution(self, state: np.ndarray, dist: np.ndarray, probabilistic: bool = False) -> int:
-        legal_dist = np.array([dist[action] if self.is_legal(state, action) else 0.0 for action in range(dist.shape[0])])
+        legal_dist = np.array([dist[action] if self.is_legal(state, action) else 0.0 for action in range(self.n_actions)])
         legal_dist /= legal_dist.sum()
         return np.random.choice(np.arange(legal_dist.shape[0]), p=legal_dist) if probabilistic else np.argmax(legal_dist)
 
