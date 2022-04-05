@@ -1,4 +1,6 @@
+from time import sleep
 from typing import Optional
+
 import numpy as np
 
 from environments.environment import Environment, Player
@@ -42,21 +44,10 @@ class Nim(Environment):
         self.switch_player(new_state)
         return new_state
 
-    def visualize(self, state: np.ndarray) -> None:
+    def visualize(self, state: np.ndarray, vis_delay: float = 0.0, vis_id: int = 1) -> None:
         print(f'{self.get_player(state)} | Stones: {self._to_value(state)}')
+        sleep(vis_delay)
 
     def __str__(self) -> str:
         return f'{self.__class__.__name__}_{self.starting_stones}'
 
-
-if __name__ == '__main__':
-    nim = Nim()
-    nim.initialize()
-    nim.step(1)
-    print(nim._to_value(nim.state))
-    # print([s.value for s in nim.get_successor_states()])
-    # nim.step(2)
-    # print([s.value for s in nim.get_successor_states()])
-    # nim.step(3)
-    # print([s.value for s in nim.get_successor_states()])
-    # nim.step(4)
