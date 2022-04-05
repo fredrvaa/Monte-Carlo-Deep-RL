@@ -1,3 +1,7 @@
+"""
+Contains the core reinforcement learning algorithm.
+"""
+
 import time
 import datetime
 import numpy as np
@@ -6,16 +10,24 @@ from typing import Optional
 from environments.environment import Environment, Player
 from learner.actor import Actor
 from learner.replay_buffer import ReplayBuffer
-from monte_carlo.monte_carlo import MonteCarloTree
+from monte_carlo.monte_carlo_tree import MonteCarloTree
 
 import tensorflow.keras.backend as K
 
 
 class ReinforcementLearner:
+    """
+    Class used to train an actor using data gathered from monte carlo simulations.
+    """
+
     def __init__(self,
                  environment: Environment,
                  actor: Actor,
                  ):
+        """
+        :param environment: Environment the actor should be fitted to
+        :param actor: The actor to fit
+        """
 
         self.environment: Environment = environment
         self.actor: Actor = actor
@@ -28,7 +40,25 @@ class ReinforcementLearner:
             epochs: int = 1,
             visualize: bool = False,
             vis_delay: float = 0.1,
-            checkpoint_iter: Optional[int] = None):
+            checkpoint_iter: Optional[int] = None) -> None:
+        """
+        Fits the actor to the environment by supervised learning.
+
+        Data is incrementally gathered by performing monte carlo simulations and adding (state, action_distribution)
+        pairs to a replay buffer. Random actions are taken after each monte carlo simulation in order to
+        maintain diversity in the replay buffer.
+
+        Mini batches from the replay buffer is then used to fit the actor.
+
+        :param n_games: Number of real games to perform RL for
+        :param n_search_games: Number of search games in each monte carlo simulation
+        :param batch_size: Batch size retrieved from the replay buffer to be used to train the actor
+        :param buffer_size: Max buffer size. If None, the buffer size is unlimited
+        :param epochs: Number of epochs to train the actor for each minibatch from the replay buffer
+        :param visualize: Whether to visualize each game
+        :param vis_delay: Delay between each visualization
+        :param checkpoint_iter: Number of iterations between checkpointing actor model to file
+        """
 
         rbuf = ReplayBuffer(batch_size=batch_size, buffer_size=buffer_size)
 
