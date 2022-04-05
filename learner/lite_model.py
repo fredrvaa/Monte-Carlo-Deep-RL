@@ -1,10 +1,13 @@
+"""
+Contains a slightly modified version of LiteModel provided in discussions on blackboard.
+"""
+
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras as tfk
 
 
 class LiteModel:
-
     @classmethod
     def from_file(cls, model_path):
         return LiteModel(tf.lite.Interpreter(model_path=model_path))
