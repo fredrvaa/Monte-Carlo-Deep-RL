@@ -71,7 +71,7 @@ class MonteCarloTree:
                 new_root = child
                 break
         if new_root is None:
-            raise ValueError(f'Action {action} does not move root to new state.')
+            raise ValueError(f'Action {action} does not move root to any legal child state.')
 
         new_root.parent = None
         self.root = new_root
