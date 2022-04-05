@@ -1,3 +1,7 @@
+"""
+Contains MCT class.
+"""
+
 import numpy as np
 
 from monte_carlo.node import Node
@@ -6,6 +10,10 @@ from learner.lite_model import LiteModel
 
 
 class MonteCarloTree:
+    """
+    Class used to perform monte carlo simulations.
+    """
+
     def __init__(self,
                  environment: Environment,
                  actor: LiteModel,
@@ -13,6 +21,14 @@ class MonteCarloTree:
                  exploration_constant: float = 1.0,
                  M: int = 100,
                  epsilon: float = 0.01):
+        """
+        :param environment: Environment to perform search
+        :param actor: Actor used to take actions during rollout
+        :param root_state: Root state in environment
+        :param exploration_constant: How much to weigh exploration
+        :param M: Number of searches in simulation
+        :param epsilon: Random action is taken in rollout with probability epsilon
+        """
 
         self.environment: Environment = environment
         self.actor = actor
@@ -24,6 +40,12 @@ class MonteCarloTree:
         self.epsilon = epsilon
 
     def _tree_search(self) -> Node:
+        """
+        Searches the tree for a leaf node starting at the root using tree policy.
+
+        :return: A leaf node
+        """
+
         node = self.root
         while not node.is_leaf:
             if self.environment.get_player(node.state) == Player.one:
@@ -34,6 +56,12 @@ class MonteCarloTree:
         return node
 
     def _node_expansion(self, node: Node) -> None:
+        """
+        Adds children to a node.
+
+        :param node: Node to expand
+        """
+
         legal_actions = self.environment.get_legal_actions(node.state)
         successor_states = np.array([self.environment.perform_action(np.copy(node.state), action)
                                      for action in legal_actions])
@@ -41,6 +69,13 @@ class MonteCarloTree:
                          for state, action in zip(successor_states, legal_actions)]
 
     def _rollout(self, node: Node) -> float:
+        """
+        Performs rollout from a node to give a value of the node.
+
+        :param node: Node to perform rollout from
+        :return: Value from the single rollout
+        """
+
         state = node.state
         final, winning_player = self.environment.is_final(state)
         while not final:
@@ -56,6 +91,13 @@ class MonteCarloTree:
         return reward
 
     def _backpropagation(self, node: Node, value: float) -> None:
+        """
+        Backpropagates a value from a node up to the root.
+
+        :param node: Node to backpropagate from
+        :param value: Value to backpropagate
+        """
+
         while True:
             node.N += 1
             node.total_value += value
@@ -64,7 +106,13 @@ class MonteCarloTree:
             else:
                 node = node.parent
 
-    def set_new_root(self, action: int):
+    def set_new_root(self, action: int) -> None:
+        """
+        Moves the root to one of its children, and discards the rest of the tree.
+
+        :param action: Action to perform to move the root
+        """
+
         new_root = None
         for child in self.root.children:
             if child.action == action:
@@ -77,6 +125,12 @@ class MonteCarloTree:
         self.root = new_root
 
     def simulation(self) -> np.ndarray:
+        """
+        Performs monte carlo simulation and returns action probabilities
+
+        :return: Probabilities for taking different actions, where high probabilities
+                 correspond to good actions in the current root state
+        """
         for m in range(self.M):
             node = self._tree_search()
             self._node_expansion(node=node)
@@ -91,18 +145,3 @@ class MonteCarloTree:
         dist = {child.action: child.N / visit_sum for child in self.root.children}
         return np.array([0 if i not in dist else dist[i] for i in range(self.environment.n_actions)])
 
-
-if __name__ == '__main__':
-    from environments.nim import Nim
-
-    environment = Nim(starting_stones=2, max_take=5)
-    state = environment.initialize(starting_player=Player.two)
-    mct = MonteCarloTree(environment, None, state, M=10000, epsilon=1)
-    final, winning_player = False, None
-    while not final:
-        dist = mct.simulation()
-        print('State: ', environment._to_value(state))
-        print('Dist: ', dist, int(np.argmax(dist)) + 1)
-        action = int(np.argmax(dist))
-        final, winning_player, state = environment.step(state, action)
-        mct.set_new_root(action)
