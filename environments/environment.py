@@ -29,7 +29,7 @@ class Environment(ABC):
         pass
 
     @abstractmethod
-    def visualize(self, state: np.ndarray) -> None:
+    def visualize(self, state: np.ndarray, vis_delay: float, vis_id: int) -> None:
         pass
 
     def get_action_from_distribution(self, state: np.ndarray, dist: np.ndarray, probabilistic: bool = False) -> int:
@@ -50,12 +50,9 @@ class Environment(ABC):
         action = self.get_random_action(state)
         return self.perform_action(np.copy(state), action)
 
-    def step(self, state: np.ndarray, action: int, visualize: bool = False) -> tuple[bool, Optional[Player], np.ndarray]:
+    def step(self, state: np.ndarray, action: int) -> tuple[bool, Optional[Player], np.ndarray]:
         if state is None:
             raise ValueError('Call initialize() before trying to step')
-
-        if visualize:
-            self.visualize(state)
 
         new_state = self.perform_action(state, action)
         final, winning_player = self.is_final(new_state)

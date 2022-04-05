@@ -4,8 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from environments.environment import Environment, Player
-from environments.node_search import Node, path_to_goal_exists
-from environments.utils import rotate
+from environments.utils import Node, path_to_goal_exists, rotate
 
 
 class Hex(Environment):
@@ -14,30 +13,9 @@ class Hex(Environment):
         self.n_actions: int = k**2
         self.state_size: int = 2 * (self.n_actions + 1)  # +1 for player
 
-        self.player1_plot, = plt.plot([], [], color='red', zorder=2, marker='o', markersize=10, ls="")
-        self.player2_plot, = plt.plot([], [], color='black', zorder=2, marker='o', markersize=10, ls="")
-
     def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
         state = np.zeros(self.state_size)
         state[:2] = starting_player.value
-
-        board = self.state_to_board(state, self.k)
-        origin = (self.k - 1) / 2
-        plt.ion()
-        for i, row in enumerate(board):
-            for j, node in enumerate(row):
-                for neighbour in node.neighbours:
-                    node_x, node_y = rotate(node.row, node.col, origin, -135)
-                    neighbour_x, neighbour_y = rotate(neighbour.row, neighbour.col, origin, -135)
-                    plt.plot([node_x, neighbour_x], [node_y, neighbour_y], color='grey', zorder=1, markersize=10,
-                             marker='o')
-
-        self.player1_plot.set_xdata([])
-        self.player1_plot.set_ydata([])
-
-        self.player2_plot.set_xdata([])
-        self.player2_plot.set_ydata([])
-
 
         return state
 
@@ -93,7 +71,8 @@ class Hex(Environment):
 
             for node in start_nodes:
                 if np.array_equal(node.value, player.value):
-                    if path_to_goal_exists(node, player.value, goal_nodes):
+                    exists, path = path_to_goal_exists(node, player.value, goal_nodes)
+                    if exists:
                         return True, player
 
         return False, None
@@ -107,47 +86,65 @@ class Hex(Environment):
         self.switch_player(new_state)
         return new_state
 
-    def visualize(self, state: np.ndarray) -> None:
-        player1_xdata = []
-        player1_ydata = []
-        player2_xdata = []
-        player2_ydata = []
+    def visualize(self, state: np.ndarray, vis_delay: float = 0.1, vis_id: int = 1) -> None:
+        # Get figure and clear
+        fig = plt.figure(vis_id)
+        fig.clear()
 
+        # Plot base board
         board = self.state_to_board(state, self.k)
         origin = (self.k-1) / 2
         for i, row in enumerate(board):
             for j, node in enumerate(row):
+                for neighbour in node.neighbours:
+                    node_x, node_y = rotate(node.row, node.col, origin, -135)
+                    neighbour_x, neighbour_y = rotate(neighbour.row, neighbour.col, origin, -135)
+                    plt.plot([node_x, neighbour_x], [node_y, neighbour_y], color='grey', zorder=1, markersize=10,
+                             marker='o')
+
+        # Plot player pieces
+        player1_x = []
+        player1_y = []
+        player2_x = []
+        player2_y = []
+        for i, row in enumerate(board):
+            for j, node in enumerate(row):
                 x, y = rotate(i, j, origin, -135)
                 if np.array_equal(node.value, Player.one.value):
-                    player1_xdata.append(x)
-                    player1_ydata.append(y)
+                    player1_x.append(x)
+                    player1_y.append(y)
                 elif np.array_equal(node.value, Player.two.value):
-                    player2_xdata.append(x)
-                    player2_ydata.append(y)
+                    player2_x.append(x)
+                    player2_y.append(y)
 
-        self.player1_plot.set_xdata(player1_xdata)
-        self.player1_plot.set_ydata(player1_ydata)
-        self.player2_plot.set_xdata(player2_xdata)
-        self.player2_plot.set_ydata(player2_ydata)
+        plt.plot(player1_x, player1_y, color='red', zorder=3, marker='o', markersize=10, ls="")
+        plt.plot(player2_x, player2_y, color='black', zorder=3, marker='o', markersize=10, ls="")
 
-        plt.pause(0.05)
+        # Check if state is final and if so get path
+        final, winning_player, path = False, None, []
+        for player in Player:
+            if player == Player.one:
+                start_nodes = board[0, :]
+                goal_nodes = board[-1, :]
+            else:
+                start_nodes = board[:, 0]
+                goal_nodes = board[:, -1]
+
+            for node in start_nodes:
+                if np.array_equal(node.value, player.value):
+                    exists, found_path = path_to_goal_exists(node, player.value, goal_nodes)
+                    if exists:
+                        final, winning_player, path = True, player, found_path
+
+        # Plot path if state is final
+        if final:
+            fig.suptitle(f'{winning_player} wins!', color='red' if winning_player == Player.one else 'black')
+            for node1, node2 in zip(path, path[1:]):
+                node1_x, node1_y = rotate(node1.row, node1.col, origin, -135)
+                node2_x, node2_y = rotate(node2.row, node2.col, origin, -135)
+                plt.plot([node1_x, node2_x], [node1_y, node2_y], color='orange', zorder=2)
+
+        plt.pause(vis_delay)
 
     def __str__(self) -> str:
         return f'{self.__class__.__name__}_{self.k}x{self.k}'
-
-
-if __name__ == '__main__':
-    hex = Hex()
-    hex.initialize()
-    hex.step(0)
-    hex.step(1)
-    hex.step(2)
-    hex.step(3)
-    hex.step(4)
-    hex.step(5)
-    hex.step(8)
-    hex.step(7)
-    hex.step(12)
-    print(hex.state)
-    print(hex.is_final(hex.state))
-    hex.visualize(hex.state, hex.k)

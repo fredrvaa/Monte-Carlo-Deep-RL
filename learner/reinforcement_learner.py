@@ -39,16 +39,21 @@ class ReinforcementLearner:
             print(f'----Game {n+1}----')
 
             state = self.environment.initialize(np.random.choice(list(Player)))
+            if visualize:
+                self.environment.visualize(state, n)
             mct = MonteCarloTree(self.environment, self.actor.get_lite_model(), root_state=state, M=n_search_games)
             print('Building replay buffer...')
             final, winning_player = False, None
+
             while not final:
                 dist = mct.simulation()
 
                 rbuf.store_replay(state, dist)
 
                 action = self.environment.get_random_action(state)
-                final, winning_player, state = self.environment.step(state, action, visualize=visualize)
+                final, winning_player, state = self.environment.step(state, action)
+                if visualize:
+                    self.environment.visualize(state, n)
                 mct.set_new_root(action)
 
             print(f'Buffer size: {rbuf.n}')
