@@ -1,8 +1,11 @@
 import os
 import argparse
 
+import matplotlib.pyplot as plt
+
 from config.parser import ToppParser
 from environments.environment import Environment
+from environments.hex import Hex
 from topp.topp import Topp
 from topp.visualize import plot_win_ratios
 
@@ -16,6 +19,7 @@ args = parser.parse_args()
 model_paths = [f'{args.folder}/{model_name}' for model_name in os.listdir(args.folder)]
 model_paths.sort(key=lambda p: int(p.split('.')[0].split('_')[-1]))
 model_names = [p.split('.')[0].split('/')[-1] for p in model_paths]
+print('Models: ', model_names)
 
 # Parse config
 configparser = ToppParser(args.config)
@@ -28,6 +32,8 @@ wins = topp.round_robin(**round_robing_kwargs)
 
 # Plot win ratios per model
 win_ratios = wins / round_robing_kwargs['n_games']
-print('Total wins: ', wins.sum(axis=1))
 print('Win ratios: ', win_ratios.sum(axis=1) / (len(model_names) - 1))
 plot_win_ratios(model_names, win_ratios)
+
+if round_robing_kwargs['visualize'] and isinstance(environment, Hex):
+    plt.show()
