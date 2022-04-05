@@ -5,6 +5,7 @@ import matplotlib.patches as mpt
 
 def plot_win_ratios(model_names: list[str], win_ratios: np.ndarray, cmap: str = 'rainbow') -> None:
     # Setup constants
+    plt.figure()
     n_models = len(model_names)
     cmap = plt.cm.get_cmap(cmap, n_models)
     step = 1 / (n_models)
