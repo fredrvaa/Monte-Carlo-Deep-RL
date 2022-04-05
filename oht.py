@@ -1,3 +1,9 @@
+"""
+This is a utility script used to play in the OHT with a trained 7x7 Hex model.
+
+Usage: python oht.py -m <path/to/7x7/hex/model>
+"""
+
 import argparse
 
 from oht_client.hex_client import HexClient

@@ -1,3 +1,9 @@
+"""
+This is a utility script used to run a Tournament of Progressive Policies from a config file.
+
+Usage: python run_topp.py -f <path/to/models/folder> -c <path/to/topp/config>
+"""
+
 import os
 import argparse
 

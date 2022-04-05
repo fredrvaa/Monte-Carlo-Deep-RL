@@ -1,3 +1,9 @@
+"""
+This is a utility script used to train a actor NN with RL and MCTS from a config file.
+
+Usage: python fit.py -c <path/to/fit/config>
+"""
+
 import os
 import argparse
 
