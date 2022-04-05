@@ -29,5 +29,5 @@ wins = topp.round_robin(**round_robing_kwargs)
 # Plot win ratios per model
 win_ratios = wins / round_robing_kwargs['n_games']
 print('Total wins: ', wins.sum(axis=1))
-print('Win ratios: ', win_ratios.mean(axis=1))
+print('Win ratios: ', win_ratios.sum(axis=1) / (len(model_names) - 1))
 plot_win_ratios(model_names, win_ratios)

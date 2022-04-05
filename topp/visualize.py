@@ -22,7 +22,7 @@ def plot_win_ratios(model_names: list[str], win_ratios: np.ndarray, cmap: str = 
     plt.legend(handles=legend_patches)
 
     # Plot mean win percentage
-    ax.plot(range(n_models), win_ratios.mean(axis=1), color='black', marker='o', zorder=2)
+    ax.plot(range(n_models), win_ratios.sum(axis=1) / (n_models - 1), color='black', marker='o', zorder=2)
 
     # Plot bars
     for i, (win, model_name) in enumerate(zip(win_ratios, model_names)):
