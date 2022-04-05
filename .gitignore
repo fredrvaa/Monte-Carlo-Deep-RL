@@ -1,7 +1,4 @@
 models
-models_old
-config/fit
-config/topp
 
 *.h5
 *.crt

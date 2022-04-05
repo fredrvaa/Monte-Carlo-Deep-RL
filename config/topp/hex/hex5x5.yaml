@@ -1,0 +1,9 @@
+type: topp
+environment:
+  hex:
+    k: 5
+round_robin:
+  n_games: 250
+  probabilistic: True
+  visualize: False
+  vis_delay: 0.1

@@ -1,0 +1,21 @@
+type: fit
+environment:
+  nim:
+    starting_stones: 17
+    max_take: 5
+actor:
+  hidden_sizes: [128, 256, 256, 128]
+  learning_rate: 8e-3
+  decay: 1e-2
+  optimizer: 'adam'
+  activation: 'leaky_relu'
+  checkpoint_folder: 'models/nim17'
+fit:
+  n_games: 200
+  n_search_games: 1000
+  batch_size: 100
+  buffer_size: 1000
+  epochs: 5
+  checkpoint_iter: 50
+  visualize: True
+  vis_delay: 0
