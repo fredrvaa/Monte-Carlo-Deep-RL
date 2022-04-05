@@ -8,6 +8,8 @@ from learner.actor import Actor
 from learner.replay_buffer import ReplayBuffer
 from monte_carlo.monte_carlo import MonteCarloTree
 
+import tensorflow.keras.backend as K
+
 
 class ReinforcementLearner:
     def __init__(self,
@@ -57,6 +59,7 @@ class ReinforcementLearner:
             if rbuf.is_ready:
                 x, y = rbuf.get_batch()
                 self.actor.model.fit(x, y, epochs=epochs)
+                print('Learning rate: ', K.eval(self.actor.model.optimizer._decayed_lr(float)))
 
             end_time = time.time()
             print('MCTS time: ', datetime.timedelta(seconds=mct_time - start_time))
