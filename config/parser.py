@@ -43,3 +43,15 @@ class FitParser(ConfigParser):
 
     def get_fit_kwargs(self):
         return self.config['fit']
+
+
+class ToppParser(ConfigParser):
+    def __init__(self, config_path: str):
+        super().__init__(config_path)
+
+        if self.config['type'] != 'topp':
+            raise ValueError(f'Config type if {self.config["type"]} not topp')
+
+    def get_round_robin_kwargs(self):
+        round_robin_kwargs = self.config['round_robin']
+        return round_robin_kwargs
