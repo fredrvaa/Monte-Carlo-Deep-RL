@@ -1,4 +1,8 @@
 models
+backup
+
+config
+!config/parser.py
 
 *.h5
 *.crt

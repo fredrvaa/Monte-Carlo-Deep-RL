@@ -1,10 +1,10 @@
 """
 Contains MCT class.
 """
+from typing import Optional
 
 import numpy as np
 
-from learner.network import scale_value
 from monte_carlo.node import Node
 from environments.environment import Environment, Player
 from learner.lite_model import LiteModel
@@ -17,9 +17,9 @@ class MonteCarloTree:
 
     def __init__(self,
                  environment: Environment,
-                 actor: LiteModel,
-                 critic: LiteModel,
                  root_state: np.ndarray,
+                 actor: LiteModel,
+                 critic: Optional[LiteModel] = None,
                  exploration_constant: float = 1.0,
                  M: int = 100):
         """
@@ -31,13 +31,15 @@ class MonteCarloTree:
         """
 
         self.environment: Environment = environment
-        self.actor = actor
-        self.critic = critic
-
-        self.root: Node = Node(state=root_state)
+        self.actor: LiteModel = actor
+        self.critic: Optional[LiteModel] = critic
 
         self.exploration_constant: float = exploration_constant
         self.M: int = M
+
+        self.root: Node = Node(state=root_state)
+
+        self._node_expansion(node=self.root)
 
     def _tree_search(self) -> Node:
         """
@@ -55,18 +57,26 @@ class MonteCarloTree:
             node = node.children[a]
         return node
 
-    def _node_expansion(self, node: Node) -> None:
+    def _node_expansion(self, node: Node) -> Node:
         """
         Adds children to a node.
 
         :param node: Node to expand
+        :returns: Node to be evaluated
         """
+        if node.N == 0:
+            return node
 
         legal_actions = self.environment.get_legal_actions(node.state)
         successor_states = np.array([self.environment.perform_action(np.copy(node.state), action)
                                      for action in legal_actions])
         node.children = [Node(state=state, action=action, exploration_constant=self.exploration_constant, parent=node)
                          for state, action in zip(successor_states, legal_actions)]
+
+        if len(node.children) == 0:
+            return node
+        else:
+            return np.random.choice(node.children)
 
     def _rollout(self, node: Node, epsilon: float) -> float:
         """
@@ -90,6 +100,12 @@ class MonteCarloTree:
 
         reward = 1.0 if winning_player == Player.one else -1.0
         return reward
+
+    def _leaf_evaluation(self, node: Node, epsilon: float, sigma: float = 1.0) -> float:
+        if np.random.random() > sigma and self.critic is not None:
+            return float(self.critic.predict_single(node.state))
+        else:
+            return self._rollout(node=node, epsilon=epsilon)
 
     def _backpropagation(self, node: Node, value: float) -> None:
         """
@@ -124,6 +140,7 @@ class MonteCarloTree:
 
         new_root.parent = None
         self.root = new_root
+        self._node_expansion(node=self.root)
 
     def simulation(self, epsilon: float = 1.0, sigma: float = 1.0) -> np.ndarray:
         """
@@ -134,25 +151,20 @@ class MonteCarloTree:
         :return: Probabilities for taking different actions, where high probabilities
                  correspond to good actions in the current root state
         """
+
+        # Return winning action immediately if it exists
+        for child in self.root.children:
+            final, winning_player = self.environment.is_final(child.state)
+            if final and winning_player == self.environment.get_player(self.root.state):
+                dist = np.zeros(self.environment.n_actions)
+                dist[child.action] = 1.0
+                return dist
+
+        # Simulate moves
         for m in range(self.M):
-
             node = self._tree_search()
-            self._node_expansion(node=node)
-
-            if len(node.children) > 0:
-                evaluation_node = np.random.choice(node.children)
-            else:
-                evaluation_node = node
-
-            if np.random.random() > sigma:
-                # value = scale_value(old_range=(0.0, 1.0),
-                #                     new_range=(-1, 1),
-                #                     old_value=float(self.critic.predict_single(evaluation_node.state)))
-
-                value = float(self.critic.predict_single(evaluation_node.state))
-            else:
-                value = self._rollout(node=evaluation_node, epsilon=epsilon)
-
+            evaluation_node = self._node_expansion(node=node)
+            value = self._leaf_evaluation(node=node, epsilon=epsilon, sigma=sigma)
             self._backpropagation(node=evaluation_node, value=value)
 
         visit_sum = sum([child.N for child in self.root.children])

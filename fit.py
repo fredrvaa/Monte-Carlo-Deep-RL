@@ -6,6 +6,7 @@ Usage: python fit.py -c <path/to/fit/config>
 
 import os
 import argparse
+from typing import Optional
 
 from config.parser import FitParser
 from environments.environment import Environment
@@ -31,11 +32,15 @@ actor: Network = Network(name='Actor',
                          output_size=environment.n_actions,
                          **actor_kwargs)
 
-critic_kwargs = configparser.get_network_kwargs('critic')
-critic: Network = Network(name='Critic',
-                          input_size=environment.state_size,
-                          output_size=1,
-                          **critic_kwargs)
+try:
+    critic_kwargs = configparser.get_network_kwargs('critic')
+    critic: Optional[Network] = Network(name='Critic',
+                              input_size=environment.state_size,
+                              output_size=1,
+                              **critic_kwargs)
+except KeyError:
+    critic: Optional[Network] = None
+
 
 # Run reinforcement learning
 rl = ReinforcementLearner(environment, actor, critic)
