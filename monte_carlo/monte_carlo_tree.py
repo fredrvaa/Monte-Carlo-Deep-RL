@@ -4,6 +4,7 @@ Contains MCT class.
 
 import numpy as np
 
+from learner.network import scale_value
 from monte_carlo.node import Node
 from environments.environment import Environment, Player
 from learner.lite_model import LiteModel
@@ -17,27 +18,26 @@ class MonteCarloTree:
     def __init__(self,
                  environment: Environment,
                  actor: LiteModel,
+                 critic: LiteModel,
                  root_state: np.ndarray,
                  exploration_constant: float = 1.0,
-                 M: int = 100,
-                 epsilon: float = 0.01):
+                 M: int = 100):
         """
         :param environment: Environment to perform search
         :param actor: Actor used to take actions during rollout
         :param root_state: Root state in environment
         :param exploration_constant: How much to weigh exploration
         :param M: Number of searches in simulation
-        :param epsilon: Random action is taken in rollout with probability epsilon
         """
 
         self.environment: Environment = environment
         self.actor = actor
+        self.critic = critic
 
         self.root: Node = Node(state=root_state)
 
         self.exploration_constant: float = exploration_constant
         self.M: int = M
-        self.epsilon = epsilon
 
     def _tree_search(self) -> Node:
         """
@@ -68,18 +68,19 @@ class MonteCarloTree:
         node.children = [Node(state=state, action=action, exploration_constant=self.exploration_constant, parent=node)
                          for state, action in zip(successor_states, legal_actions)]
 
-    def _rollout(self, node: Node) -> float:
+    def _rollout(self, node: Node, epsilon: float) -> float:
         """
         Performs rollout from a node to give a value of the node.
 
         :param node: Node to perform rollout from
+        :param epsilon: Random action is taken in rollout with probability epsilon
         :return: Value from the single rollout
         """
 
         state = node.state
         final, winning_player = self.environment.is_final(state)
         while not final:
-            if np.random.random() > self.epsilon:
+            if np.random.random() > epsilon:
                 dist = self.actor.predict_single(state)
                 action = self.environment.get_action_from_distribution(state, dist)
             else:
@@ -124,24 +125,38 @@ class MonteCarloTree:
         new_root.parent = None
         self.root = new_root
 
-    def simulation(self) -> np.ndarray:
+    def simulation(self, epsilon: float = 1.0, sigma: float = 1.0) -> np.ndarray:
         """
         Performs monte carlo simulation and returns action probabilities
 
+        :param epsilon: Probability of taking random action during rollout
+        :param sigma: Probability of using critic for leaf evaluation instead of rollout
         :return: Probabilities for taking different actions, where high probabilities
                  correspond to good actions in the current root state
         """
         for m in range(self.M):
+
             node = self._tree_search()
             self._node_expansion(node=node)
+
             if len(node.children) > 0:
-                rollout_node = np.random.choice(node.children)
+                evaluation_node = np.random.choice(node.children)
             else:
-                rollout_node = node
-            value = self._rollout(node=rollout_node)
-            self._backpropagation(node=rollout_node, value=value)
+                evaluation_node = node
+
+            if np.random.random() > sigma:
+                # value = scale_value(old_range=(0.0, 1.0),
+                #                     new_range=(-1, 1),
+                #                     old_value=float(self.critic.predict_single(evaluation_node.state)))
+
+                value = float(self.critic.predict_single(evaluation_node.state))
+            else:
+                value = self._rollout(node=evaluation_node, epsilon=epsilon)
+
+            self._backpropagation(node=evaluation_node, value=value)
 
         visit_sum = sum([child.N for child in self.root.children])
+
         dist = {child.action: child.N / visit_sum for child in self.root.children}
         return np.array([0 if i not in dist else dist[i] for i in range(self.environment.n_actions)])
 

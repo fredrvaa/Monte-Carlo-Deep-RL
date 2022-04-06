@@ -9,8 +9,8 @@ import argparse
 
 from config.parser import FitParser
 from environments.environment import Environment
-from learner.actor import Actor
 
+from learner.network import Network
 from learner.reinforcement_learner import ReinforcementLearner
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -20,14 +20,24 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--config', help='path/to/fit/config', type=str)
 args = parser.parse_args()
 
-# Parse config
+# Parse config and load environment, actor, and critic
 configparser = FitParser(args.config)
 
 environment: Environment = configparser.get_environment()
-actor_kwargs = configparser.get_actor_kwargs()
-actor: Actor = Actor(input_size=environment.state_size, output_size=environment.n_actions, **actor_kwargs)
+
+actor_kwargs = configparser.get_network_kwargs('actor')
+actor: Network = Network(name='Actor',
+                         input_size=environment.state_size,
+                         output_size=environment.n_actions,
+                         **actor_kwargs)
+
+critic_kwargs = configparser.get_network_kwargs('critic')
+critic: Network = Network(name='Critic',
+                          input_size=environment.state_size,
+                          output_size=1,
+                          **critic_kwargs)
 
 # Run reinforcement learning
-rl = ReinforcementLearner(environment, actor)
+rl = ReinforcementLearner(environment, actor, critic)
 fit_kwargs = configparser.get_fit_kwargs()
 rl.fit(**fit_kwargs)

@@ -1,5 +1,5 @@
 """
-Contains Actor class, as well as some utility functions for loading tf.keras objects from string.
+Contains a general Network class, as well as some utility functions for loading tf.keras objects from string.
 """
 
 from typing import Optional
@@ -48,9 +48,28 @@ def get_optimizer(optimizer_string: str, **kwargs) -> tfk.optimizers.Optimizer:
         raise ValueError(f'Optimizer {optimizer_string} is not available')
 
 
-class Actor:
+def get_loss_function(loss_string: str):
+    if loss_string == 'mse':
+        return tfk.losses.mean_squared_error
+    elif loss_string == 'mae':
+        return tfk.losses.mean_absolute_error
+    elif loss_string == 'hinge':
+        return tfk.losses.hinge
+    elif loss_string == 'categorical_crossentropy':
+        return tfk.losses.categorical_crossentropy
+    elif loss_string == 'binary_crossentropy':
+        return tfk.losses.binary_crossentropy
+    else:
+        raise ValueError(f'Loss function {loss_string} is not available')
+
+
+def scale_value(old_range: tuple[float, float], new_range: tuple[float, float], old_value: float) -> float:
+    return (((old_value - old_range[0]) * (new_range[1] - new_range[0])) / (old_range[1] - old_range[0])) + new_range[0]
+
+
+class Network:
     """
-    Wrapper class around a tf.keras model.
+    General network class used to create actor and critic.
     """
 
     def __init__(self,
@@ -58,15 +77,21 @@ class Actor:
                  output_size: int,
                  hidden_sizes: list[int],
                  activation: str = 'leaky_relu',
+                 output_activation: str = 'leaky_relu',
+                 softmax: bool = False,
                  optimizer: str = 'adam',
+                 loss_function: str = 'mse',
                  learning_rate: float = 5e-4,
                  decay: float = 1e-6,
+                 name: Optional['str'] = None,
                  checkpoint_folder: Optional[str] = 'models'):
         """
         :param input_size: Size of input layer
         :param output_size: Size of output layer
         :param hidden_sizes: Sizes of hidden layers
         :param activation: Activation function used in hidden layers
+        :param output_activation: Activation function used in the output
+        :param softmax: Whether the output should be passed through a softmax
         :param optimizer: Optimizer to use
         :param learning_rate: Starting learning rate
         :param decay: Learning rate decay factor
@@ -77,16 +102,17 @@ class Actor:
 
         optimizer = get_optimizer(optimizer, learning_rate=learning_rate, decay=decay)
 
-        self.model = tfk.Sequential()
+        self.model = tfk.Sequential(name=name)
         self.model.add(tfkl.InputLayer(input_shape=input_size))
         for size in hidden_sizes:
             self.model.add(tfkl.Dense(units=size, kernel_initializer=initializer))
             self.model.add(get_activation_layer(activation))
         self.model.add(tfkl.Dense(units=output_size, kernel_initializer=initializer))
-        self.model.add(get_activation_layer('leaky_relu'))
-        self.model.add(tfkl.Softmax())
+        self.model.add(get_activation_layer(output_activation))
+        if softmax:
+            self.model.add(tfkl.Softmax())
 
-        self.model.compile(loss=tfk.losses.CategoricalCrossentropy(), optimizer=optimizer)
+        self.model.compile(loss=get_loss_function(loss_function), optimizer=optimizer)
         self.model.summary()
 
         self.checkpoint_folder: Optional[str] = checkpoint_folder
