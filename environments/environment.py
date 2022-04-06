@@ -12,6 +12,10 @@ class Player(Enum):
 
 
 class Environment(ABC):
+    def __init__(self):
+        self.n_actions: int = -1
+        self.state_size: int = -1
+
     @abstractmethod
     def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
         pass
