@@ -51,9 +51,9 @@ class ReinforcementLearner:
             sigma: float = 1.0,
             epsilon_decay: float = 0.0,
             sigma_decay: float = 0.0,
+            n_saved_models: int = 2,
             visualize: bool = False,
             vis_delay: float = 0.1,
-            checkpoint_iter: Optional[int] = None,
             verbose: int = 2) -> None:
         """
         Fits the actor to the environment by supervised learning.
@@ -76,9 +76,11 @@ class ReinforcementLearner:
         :param sigma_decay: Decay factor for sigma. 0.0 -> No decay
         :param visualize: Whether to visualize each game
         :param vis_delay: Delay between each visualization
-        :param checkpoint_iter: Number of iterations between checkpointing actor model to file
-        :param verbose: Decides verbosity during fit: 0=minimal, 1=essential, 2=extra
+        :param n_saved_models: Number of models to save to file (checkpoint)
+        :param verbose: Decides verbosity during fit: 0=minimal, 1=essential, 2=additional, 3=predictions per episode
         """
+
+        checkpoint_iter = n_games // (n_saved_models - 1)
 
         rbuf = ReplayBuffer(targets=['actor', 'critic'] if self.critic is not None else ['actor'],
                             batch_size=batch_size,
@@ -86,12 +88,14 @@ class ReinforcementLearner:
 
         start_train = False
         for n in range(n_games):
-            print(f'----Game {n + 1}----')
-            start_time = time.time()
-
             # Checkpoint model
             if checkpoint_iter is not None and n % checkpoint_iter == 0:
-                self.actor.checkpoint(f'{self.environment}_actor_{n}')
+                model_name = f'{self.environment}_actor_{n}'
+                self.actor.checkpoint(model_name)
+                print(f'Checkpointed {model_name}')
+
+            print(f'----Game {n + 1}----')
+            start_time = time.time()
 
             # Update epsilon and sigma
             if start_train:
@@ -136,7 +140,10 @@ class ReinforcementLearner:
                 visited_states.append(state)
                 targets['actor'].append(dist)
 
-                action = self.environment.get_action_from_distribution(state, dist)
+                if np.random.random() > epsilon:
+                    action = self.environment.get_action_from_distribution(state, dist)
+                else:
+                    action = self.environment.get_random_action(state)
 
                 final, winning_player, state = self.environment.step(state, action)
                 if visualize:
@@ -166,7 +173,9 @@ class ReinforcementLearner:
                     print('Fitting nerual networks...')
 
                 for e in range(epochs):
-                    print(f'Epoch {e}')
+                    if verbose > 0:
+                        print(f'Epoch {e}')
+
                     states, dists = rbuf.get_batch(target='actor')
                     loss = self.actor.model.train_on_batch(states, dists)
                     if verbose > 0:
@@ -178,7 +187,7 @@ class ReinforcementLearner:
                         if verbose > 0:
                             print(f'Critic loss: {loss}')
 
-                    if verbose > 1:
+                    if verbose > 2:
                         state, dists = rbuf.get_sample('actor')
                         print(f'Actor sample: Target={dists}, Predict={lite_actor_model.predict_single(state)}')
 
