@@ -60,35 +60,33 @@ class Hex(Environment):
         idx = 2 + action * 2
         return state[idx:idx+2]
 
-    @staticmethod
-    def state_to_board(state: np.ndarray, k: int) -> np.ndarray:
+    def state_to_board(self, state: np.ndarray) -> np.ndarray:
         """
         Transforms and returns state as a k*k np.array.
 
         :param state: Binary np.array describing state
-        :param k: Size of board
         :return: k*k np.array of state
         """
 
         # Construct board
-        board = np.reshape([Node(Hex.get_piece(state, a)) for a in range(k ** 2)], (k, k))
+        board = np.reshape([Node(self.get_piece(state, a)) for a in range(self.k ** 2)], (self.k, self.k))
 
         # Add neighbours
-        for row in range(k):
-            for col in range(k):
+        for row in range(self.k):
+            for col in range(self.k):
                 board[row][col].row = row
                 board[row][col].col = col
                 if row > 0:
                     board[row][col].neighbours.append(board[row - 1][col])
-                if row < k - 1:
+                if row < self.k - 1:
                     board[row][col].neighbours.append(board[row + 1][col])
                 if col > 0:
                     board[row][col].neighbours.append(board[row][col - 1])
-                if col < k - 1:
+                if col < self.k - 1:
                     board[row][col].neighbours.append(board[row][col + 1])
-                if col < k - 1 and row > 0:
+                if col < self.k - 1 and row > 0:
                     board[row][col].neighbours.append(board[row - 1][col + 1])
-                if col > 0 and row < k - 1:
+                if col > 0 and row < self.k - 1:
                     board[row][col].neighbours.append(board[row + 1][col - 1])
 
         return board
@@ -113,7 +111,7 @@ class Hex(Environment):
         :return: Tuple consisting of: Whether state is final, winning player
         """
 
-        board = self.state_to_board(state, self.k)
+        board = self.state_to_board(state)
 
         for player in Player:
             if player == Player.one:
@@ -162,7 +160,7 @@ class Hex(Environment):
         fig.clear()
 
         # Plot base board
-        board = self.state_to_board(state, self.k)
+        board = self.state_to_board(state)
         origin = (self.k-1) / 2
         for i, row in enumerate(board):
             for j, node in enumerate(row):
