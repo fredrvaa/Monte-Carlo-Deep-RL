@@ -8,31 +8,66 @@ from environments.utils import Node, path_to_goal_exists, rotate
 
 
 class Hex(Environment):
+    """
+    Class implementing the game of Hex.
+    Inherits from Environment to provide a clean outward interface.
+    """
+
     def __init__(self, k: int = 4):
+        super().__init__()
         self.k: int = k
         self.n_actions: int = k**2
         self.state_size: int = 2 * (self.n_actions + 1)  # +1 for player
 
     def initialize(self, starting_player: Player = Player.one) -> np.ndarray:
+        """
+        Returns initial state.
+        :param starting_player: Player to start in environment
+        :return: Initial state
+        """
+
         state = np.zeros(self.state_size)
         state[:2] = starting_player.value
 
         return state
 
     @staticmethod
-    def to_idxs(position: int) -> tuple[int, int]:
-        idx = 2 + position * 2
+    def get_idxs(action: int) -> tuple[int, int]:
+        """
+        Converts action in range [0, n_actions-1] to indices in state array.
+
+        :param action: Action in range [0, n_actions-1]
+        :return: Indices in state array corresponding to action
+        """
+
+        idx = 2 + action * 2
         return idx, idx+1
 
     @staticmethod
-    def to_piece(state: np.ndarray, position: int) -> np.ndarray:
-        idx = 2 + position * 2
+    def get_piece(state: np.ndarray, action: int) -> np.ndarray:
+        """
+        Retrieves a piece at a position (action) in state array.
+
+        :param state: np.array describing state
+        :param action: Action in range [0, n_actions-1]
+        :return: 2x1 np.array of describing piece corresponding to action
+        """
+
+        idx = 2 + action * 2
         return state[idx:idx+2]
 
     @staticmethod
     def state_to_board(state: np.ndarray, k: int) -> np.ndarray:
+        """
+        Transforms and returns state as a k*k np.array.
+
+        :param state: Binary np.array describing state
+        :param k: Size of board
+        :return: k*k np.array of state
+        """
+
         # Construct board
-        board = np.reshape([Node(Hex.to_piece(state, a)) for a in range(k ** 2)], (k, k))
+        board = np.reshape([Node(Hex.get_piece(state, a)) for a in range(k ** 2)], (k, k))
 
         # Add neighbours
         for row in range(k):
@@ -55,10 +90,25 @@ class Hex(Environment):
         return board
 
     def is_legal(self, state: np.ndarray, action: int) -> bool:
-        idxs = self.to_idxs(action)
+        """
+        Checks if action is legal in state.
+
+        :param state: np.array describing state
+        :param action: Action to check
+        :return: Whether action is legal in state
+        """
+
+        idxs = self.get_idxs(action)
         return 0 <= action <= self.n_actions - 1 and state[idxs[0]] == 0 and state[idxs[1]] == 0
 
     def is_final(self, state: np.ndarray) -> tuple[bool, Optional[Player]]:
+        """
+        Checks state is final, and if it is also returns winning player.
+
+        :param state: np.array describing state
+        :return: Tuple consisting of: Whether state is final, winning player
+        """
+
         board = self.state_to_board(state, self.k)
 
         for player in Player:
@@ -78,15 +128,31 @@ class Hex(Environment):
         return False, None
 
     def perform_action(self, state: np.ndarray, action: int) -> np.ndarray:
+        """
+        Performs action on state and returns resulting state.
+
+        :param state: np.array describing state
+        :param action: Action to perform
+        :return: Tuple consisting of: Whether state is final, winning player
+        """
+
         if not self.is_legal(state, action):
             raise ValueError(f'Action {action} is not legal. Piece can not be placed.')
-        idxs = self.to_idxs(action)
+        idxs = self.get_idxs(action)
         new_state = np.copy(state)
         new_state[idxs[0]:idxs[1]+1] = new_state[:2]
         self.switch_player(new_state)
         return new_state
 
     def visualize(self, state: np.ndarray, vis_delay: float = 0.1, vis_id: int = 1) -> None:
+        """
+        Visualizes state of Hex as a matplotlib figure.
+
+        :param state: np.array describing state to be visualized
+        :param vis_delay: Delay after visualization
+        :param vis_id: Specific visualization id. Useful if multiple games are played.
+        """
+
         # Get figure and clear
         fig = plt.figure(vis_id)
         fig.clear()
