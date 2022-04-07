@@ -1,13 +1,17 @@
 """
 Contains code for visualizing win ratios.
 """
+from typing import Optional
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpt
 
 
-def plot_win_ratios(model_names: list[str], win_ratios: np.ndarray, cmap: str = 'rainbow') -> None:
+def plot_win_ratios(model_names: list[str],
+                    win_ratios: np.ndarray,
+                    cmap: str = 'rainbow',
+                    title: Optional[str] = None) -> None:
     """
     Plots win ratios for an arbitrary number of models as a bar chart.
 
@@ -15,15 +19,17 @@ def plot_win_ratios(model_names: list[str], win_ratios: np.ndarray, cmap: str = 
                         Length M of list must be equal to the MxM dimensions of the win_ratios np.array
     :param win_ratios: A MxM np.array of win ratios
     :param cmap: Matplotlib cmap name used when coloring bar chart.
+    :param title: Title of plot
     """
 
     # Setup constants
-    plt.figure()
+    fig = plt.figure()
     n_models = len(model_names)
     cmap = plt.cm.get_cmap(cmap, n_models)
-    step = 1 / (n_models)
+    step = 1 / n_models
 
     # Setup plot
+    fig.suptitle(title)
     ax = plt.subplot()
     ax.set_xticks(range(n_models))
     ax.set_xticklabels(model_names)

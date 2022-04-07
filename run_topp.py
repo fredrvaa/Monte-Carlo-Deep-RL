@@ -22,7 +22,7 @@ parser.add_argument('-c', '--config', type=str, help='path/to/topp/config')
 args = parser.parse_args()
 
 # Get model paths sorted by games played
-model_paths = [f'{args.folder}/{model_name}' for model_name in os.listdir(args.folder)]
+model_paths = [f'{args.folder}/{model_name}' for model_name in os.listdir(args.folder) if model_name.endswith('.h5')]
 model_paths.sort(key=lambda p: int(p.split('.')[0].split('_')[-1]))
 model_names = [p.split('.')[0].split('/')[-1] for p in model_paths]
 print('Models: ', model_names)
@@ -33,13 +33,14 @@ environment: Environment = configparser.get_environment()
 
 # Run tournament
 topp = Topp(environment, model_paths)
-round_robing_kwargs = configparser.get_round_robin_kwargs()
-wins = topp.round_robin(**round_robing_kwargs)
+round_robin_kwargs = configparser.get_round_robin_kwargs()
+wins = topp.round_robin(**round_robin_kwargs)
 
 # Plot win ratios per model
-win_ratios = wins / round_robing_kwargs['n_games']
+win_ratios = wins / round_robin_kwargs['n_games']
 print('Win ratios: ', win_ratios.sum(axis=1) / (len(model_names) - 1))
-plot_win_ratios(model_names, win_ratios)
+title = 'Probabilistic TOPP' if round_robin_kwargs['probabilistic'] else 'Deterministic TOPP'
+plot_win_ratios(model_names=model_names, win_ratios=win_ratios, title=title)
 
-if round_robing_kwargs['visualize'] and isinstance(environment, Hex):
+if round_robin_kwargs['visualize'] and isinstance(environment, Hex):
     plt.show()
