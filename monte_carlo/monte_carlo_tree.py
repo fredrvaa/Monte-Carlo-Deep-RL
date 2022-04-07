@@ -102,6 +102,14 @@ class MonteCarloTree:
         return reward
 
     def _leaf_evaluation(self, node: Node, epsilon: float, sigma: float = 1.0) -> float:
+        """
+        Evaluates leaf node by using rollout or critic, determined by sigma
+        :param node: Leaf node to be evaluated
+        :param epsilon: Probability of taking random action during rollout
+        :param sigma: Probability of using rollout for leaf evaluation instead of critic
+        :return: Estimated value of node
+        """
+
         if np.random.random() > sigma and self.critic is not None:
             return float(self.critic.predict_single(node.state))
         else:
