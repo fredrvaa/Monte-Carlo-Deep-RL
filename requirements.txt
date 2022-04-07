@@ -3,3 +3,4 @@ requests
 python-dotenv
 tensorflow==2.6.0
 pyyaml
+matplotlib
