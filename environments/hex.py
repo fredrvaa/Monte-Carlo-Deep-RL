@@ -1,3 +1,7 @@
+"""
+Contains class implementing the game of Hex.
+"""
+
 from typing import Optional
 
 import numpy as np

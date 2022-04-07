@@ -1,3 +1,7 @@
+"""
+Contains base Environment and Player classes.
+"""
+
 from enum import Enum
 from typing import Optional
 
@@ -7,6 +11,10 @@ from abc import ABC, abstractmethod
 
 
 class Player(Enum):
+    """
+    Enum containing player identifiers.
+    """
+
     one = [1, 0]
     two = [0, 1]
 

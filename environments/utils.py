@@ -1,4 +1,7 @@
-from dataclasses import dataclass, field
+"""
+Contains utility functions used by environments.
+"""
+
 from typing import Optional
 
 import numpy as np

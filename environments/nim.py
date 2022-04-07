@@ -1,3 +1,7 @@
+"""
+Contains class implementing the game of Nim.
+"""
+
 from time import sleep
 from typing import Optional
 
