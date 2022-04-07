@@ -26,6 +26,12 @@ class ReplayBuffer:
         self.buffer_size: int = buffer_size
 
     def store_replays(self, states: list[np.ndarray], **targets: list[any]) -> None:
+        """
+        Stores replays (state, targets pairs) in internal buffer
+        :param states: List of states to be associated with targets
+        :param targets: Arbitrary number of targets can be added as a replay. All targets much match length of states
+        """
+
         self._states.extend(states)
         for k, v in targets.items():
             self._targets[k].extend(v)
@@ -56,9 +62,13 @@ class ReplayBuffer:
         """
         Retieves a random batch from the replay buffer.
 
+        :param target: Which target to retrieve batch for
         :param replace: Whether an item can be retrieved multiple times
         :return: A random batch from the replay buffer
         """
+
+        if target not in self._targets:
+            raise KeyError(f'Target {target} has not been initialized')
 
         idxs = np.random.choice(self.n, size=self.batch_size, replace=replace)
         return np.array(self._states)[idxs], np.array(self._targets[target])[idxs]
@@ -69,6 +79,9 @@ class ReplayBuffer:
 
         :return: A random sample from the replay buffer
         """
+
+        if target not in self._targets:
+            raise KeyError(f'Target {target} has not been initialized')
 
         idx = np.random.randint(self.n)
         return np.array(self._states[idx]), np.array(self._targets[target][idx])
