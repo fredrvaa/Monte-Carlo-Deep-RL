@@ -1,0 +1,36 @@
+type: fit # Type of config. Can be {'fit', 'topp'}
+environment: # Environment to use during fit
+  hex: # Environment to use. Can be {'hex', 'nim'}
+    k: 5 # Hex board size (specific 'hex' parameter)
+actor: # Actor to fit
+  hidden_sizes: [256, 128, 64] # List of units constituting the hidden layers
+  learning_rate: 8e-3 # Starting learning rate
+  decay: 5e-4 # Decay factor for learning rate
+  optimizer: 'adam' # tf.keras optimizer to use, e.g. {'adam', 'sgd', 'rmsprop', 'adagrad'}
+  loss_function: 'categorical_crossentropy' # tf.keras loss to use, e.g. {'categorical_crossentropy', 'kl_divergence', 'mse'}
+  activation: 'relu' # tf.keras activation to use in hidden layers, e.g. {'relu', 'tanh', 'sigmoid', 'linear'}
+  output_activation: 'softmax' # tf.keras activation to use in output layer, e.g {'softmax', 'tanh', 'sigmoid'}
+  checkpoint_folder: 'demo/models/hex' # Folder where models should be saved to
+critic: # Critic to fit
+  hidden_sizes: [256, 128] # List of units constituting the hidden layers
+  learning_rate: 8e-2 # Starting learning rate
+  decay: 5e-4 # Decay factor for learning rate
+  optimizer: 'adam' # tf.keras optimizer to use, e.g. {'adam', 'sgd', 'rmsprop', 'adagrad'}
+  loss_function: 'mse' # tf.keras loss to use, e.g. {'categorical_crossentropy', 'kl_divergence', 'mse'}
+  activation: 'relu' # tf.keras activation to use in hidden layers, e.g. {'relu', 'tanh', 'sigmoid', 'linear'}
+  output_activation: 'tanh' # tf.keras activation to use in output layer, e.g {'softmax', 'tanh', 'sigmoid'}
+fit: # Fit parameters
+  n_games: 20 # Number of real games during RL
+  n_search_games: 2 # Number of games in each MCTS
+  batch_size: 50 # Number of training examples used to fit actor/critic
+  buffer_size: 1000 # Max number of training examples stored in the replay buffer
+  epochs: 10 # Number of epochs to train actor/critic in each game
+  critic_discount: 0.01 # How much discount should be applied to state rewards when fitting critic
+  epsilon: 1.0 # Random action during rollout is chosen with probability epsilon
+  epsilon_decay: 0.02 # Decay factor for epsilon: epsilon *= 1/(1+epsilon_decay)
+  sigma: 1.0 # Rollout is used instead of critic during leaf evaluation with probability sigma
+  sigma_decay: 0.05 # Decay factor for sigma: sigma *= 1/(1+sigma_decay)
+  n_saved_models: 5 # Number of models to checkpoint to file during training
+  visualize: False # Whether to visualize real games during RL
+  vis_delay: 0.1 # Minimum delay between visualizations
+  verbose: 0 # Decides verbosity during fit: 0=minimal, 1=essential, 2=additional, 3=shows a prediction per episode

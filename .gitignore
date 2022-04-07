@@ -4,6 +4,8 @@ demo
 config
 
 !config/parser.py
+!config/fit/base.yaml
+!config/topp/base.yaml
 
 *.h5
 *.crt

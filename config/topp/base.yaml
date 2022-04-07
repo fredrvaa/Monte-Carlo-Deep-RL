@@ -1,0 +1,9 @@
+type: topp # Type of config. Can be {'fit', 'topp'}
+environment: # Environment to use during fit
+  hex: # Environment to use. Can be {'hex', 'nim'}
+    k: 5 # Hex board size (specific 'hex' parameter)
+round_robin: # TOPP type. Can only be 'round_robin'
+  n_games: 30 # Number of games between two competitors
+  probabilistic: True # Whether actions should be taken based on probability or by maximum utility
+  visualize: False # Whether to visualize real games during RL
+  vis_delay: 0.1 # Minimum delay between visualizations
